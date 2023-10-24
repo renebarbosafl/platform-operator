@@ -106,10 +106,10 @@ spec:
       {{- end }}
       {{- if .Values.cardanoNode.enabled }}
       volumes:
-      - emptydir: {}
+      - emptyDir: {}
         name: ipc
       {{- if .Values.cardanoNode.configCloner }}
-      - emptydir: {}
+      - emptyDir: {}
         name: node-config
       {{- end }}
       {{- end }}

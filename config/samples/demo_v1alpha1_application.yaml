@@ -21,5 +21,5 @@ spec:
             pathType: ImplementationSpecific
   cardanoNode:
     enabled: true
-    configCloner: false
+    configCloner: true
     network: mainnet
