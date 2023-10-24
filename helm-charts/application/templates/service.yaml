@@ -1,0 +1,24 @@
+{{- if .Values.service.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "application.fullname" . }}
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+   {{- with .Values.service.ports }}
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+   {{- range $key, $value := . }}
+    - name: {{ $value.name }}
+      port: {{ $value.port }}
+      protocol: {{ $value.protocol }}
+      targetPort: {{ $value.name }}
+    {{- end }}
+  {{- end }}
+  selector:
+    {{- include "application.selectorLabels" . | nindent 4 }}
+{{- end }}

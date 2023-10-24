@@ -1,0 +1,25 @@
+apiVersion: demo.iohkdev.io/v1alpha1
+kind: Application
+metadata:
+  name: hello
+spec:
+  image:
+    repository: nginxdemos/hello
+    tag: "latest"
+  service:
+    enabled: true
+    ports:
+      - name: http
+        port: 80
+        protocol: TCP
+  ingress:
+    enabled: true
+    hosts:
+      - host: helloworld.test.aws.iohkdev.io
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+  cardanoNode:
+    enabled: true
+    configCloner: false
+    network: mainnet

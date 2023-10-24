@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "application.fullname" . }}
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "application.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "application.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "application.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml .| nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.service.ports }}
+          ports:
+          {{- range $key, $value := . }}
+            - name: {{ $value.name }}
+              containerPort: {{ $value.port }}
+              protocol: {{ $value.protocol }}
+          {{- end }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.cardanoNode.enabled }}
+          volumeMounts:
+          - mountPath: /ipc
+            name: ipc
+          {{- if .Values.cardanoNode.configCloner }}
+          - mountPath: /node-config
+            name: node-config
+          {{- end }}
+          {{- end }}
+        {{- if .Values.cardanoNode.enabled }}
+        - name: socat
+          args:
+          - UNIX-LISTEN:/ipc/node.socket,fork
+          - TCP-CONNECT:cardano-node-{{ .Values.cardanoNode.network }}.vela-system:8090
+          image: alpine/socat
+          imagePullPolicy: Always
+          volumeMounts:
+          - mountPath: /ipc
+            name: ipc
+        {{- end }}
+      {{- if .Values.cardanoNode.configCloner }}
+      initContainers:
+      - args:
+        - clone
+        - --single-branch
+        - --
+        - https://github.com/input-output-hk/cardano-configurations
+        - /node-config
+        image: alpine/git
+        imagePullPolicy: Always
+        name: node-config-cloner
+        volumeMounts:
+        - mountPath: /node-config
+          name: node-config
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.cardanoNode.enabled }}
+      volumes:
+      - emptydir: {}
+        name: ipc
+      {{- if .Values.cardanoNode.configCloner }}
+      - emptydir: {}
+        name: node-config
+      {{- end }}
+      {{- end }}
