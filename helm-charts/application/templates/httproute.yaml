@@ -1,0 +1,39 @@
+{{- if .Values.gateway -}}
+{{- $fullName := include "application.fullname" . -}}
+{{- $svcPort := (index .Values.service.ports 0) -}}
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+  {{- with .Values.gateway.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.gateway }}
+  {{- range $key, $value := .hosts }}
+  hostnames:
+  - {{ $value.host }}
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: traefik-gateway
+    namespace: traefik
+  rules:
+  - backendRefs:
+    - group: ""
+      kind: Service
+      name: {{ $fullName }}
+      port: {{ $svcPort.port }}
+      weight: 1
+    matches:
+    {{- range $key, $value := $value.paths }}
+    - path:
+        type: {{ $value.pathType }}
+        value: {{ $value.path }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}
