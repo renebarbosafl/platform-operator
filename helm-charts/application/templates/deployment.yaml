@@ -57,40 +57,20 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if .Values.cardanoNode.enabled }}
+          {{- with .Values.cardanoNode }}
           volumeMounts:
           - mountPath: /ipc
             name: ipc
-          {{- if .Values.cardanoNode.configCloner }}
+          {{- if .configCloner }}
           - mountPath: /node-config
             name: node-config
           {{- end }}
           {{- end }}
-        {{- if .Values.cardanoNode.enabled }}
-        - name: socat
-          args:
-          - UNIX-LISTEN:/ipc/node.socket,fork
-          - TCP-CONNECT:cardano-node-{{ .Values.cardanoNode.network }}.vela-system:8090
-          image: alpine/socat
-          imagePullPolicy: Always
-          volumeMounts:
-          - mountPath: /ipc
-            name: ipc
+        {{- with .Values.cardanoNode }}
+          {{- include "cardano.sidecar" . | nindent 8 }}
         {{- end }}
       {{- if .Values.cardanoNode.configCloner }}
-      initContainers:
-      - args:
-        - clone
-        - --single-branch
-        - --
-        - https://github.com/input-output-hk/cardano-configurations
-        - /node-config
-        image: alpine/git
-        imagePullPolicy: Always
-        name: node-config-cloner
-        volumeMounts:
-        - mountPath: /node-config
-          name: node-config
+        {{- include "cardano.configCloner" . | nindent 6 }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -104,11 +84,11 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.cardanoNode.enabled }}
+      {{- with .Values.cardanoNode }}
       volumes:
       - emptyDir: {}
         name: ipc
-      {{- if .Values.cardanoNode.configCloner }}
+      {{- if .configCloner }}
       - emptyDir: {}
         name: node-config
       {{- end }}
