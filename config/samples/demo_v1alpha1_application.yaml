@@ -7,19 +7,16 @@ spec:
     repository: nginxdemos/hello
     tag: "latest"
   service:
-    enabled: true
     ports:
       - name: http
         port: 80
         protocol: TCP
-  ingress:
-    enabled: true
+  gateway:
     hosts:
       - host: helloworld.test.aws.iohkdev.io
         paths:
           - path: /
-            pathType: ImplementationSpecific
+            pathType: PathPrefix
   cardanoNode:
-    enabled: true
-    configCloner: true
     network: mainnet
+    configCloner: true
