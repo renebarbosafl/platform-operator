@@ -42,6 +42,12 @@ rules:
   verbs:
   - '*'
 - apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - httproutes
+  verbs:
+  - '*'
+- apiGroups:
   - demo.iohkdev.io
   resources:
   - applications
